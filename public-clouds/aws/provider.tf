@@ -17,6 +17,10 @@ terraform {
       source  = "rancher/rancher2"
       version = "13.1.4"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = ">= 0.9.0"
+    }
   }
 }
 
