@@ -75,4 +75,9 @@ variable "longhorn_chart_version" {
   type        = string
   description = "Chart version for longhorn"
   default     = "v1.9.2"
+
+variable "letsencrypt_acme_server" {
+  type        = string
+  description = "Acme server"
+  default     = "https://acme-staging-v02.api.letsencrypt.org/directory"
 }
