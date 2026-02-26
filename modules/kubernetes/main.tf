@@ -1,3 +1,64 @@
+resource "helm_release" "longhorn" {
+  name             = "longhorn"
+  repository       = "https://charts.longhorn.io"
+  chart            = "longhorn"
+  namespace        = "longhorn-system"
+  create_namespace = true
+  version          = var.longhorn_chart_version
+
+  set = [{
+    name  = "persistence.defaultClass"
+    value = "false"
+    },
+    {
+      name  = "defaultSettings.storageMinimalAvailablePercentage"
+      value = "10"
+    }
+  ]
+
+  # This ensures Helm waits for all pods to be ready
+  wait = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "kubernetes_storage_class_v1" "longhorn_single_replica" {
+  metadata {
+    name = "longhorn-single-replica"
+  }
+
+  storage_provisioner    = "driver.longhorn.io"
+  reclaim_policy         = "Delete"
+  allow_volume_expansion = true
+
+  parameters = {
+    numberOfReplicas    = "1"
+    staleReplicaTimeout = "2880"
+  }
+
+  depends_on = [helm_release.longhorn]
+}
+
+resource "kubernetes_storage_class_v1" "longhorn_xfs_single_replica" {
+  metadata {
+    name = "longhorn-xfs-single-replica"
+  }
+
+  storage_provisioner    = "driver.longhorn.io"
+  reclaim_policy         = "Delete"
+  allow_volume_expansion = true
+
+  parameters = {
+    numberOfReplicas    = "1"
+    staleReplicaTimeout = "2880"
+    fsType              = "xfs"
+  }
+
+  depends_on = [helm_release.longhorn]
+}
+
 ## Add the namespace for deploying SUSE AI Stack:
 resource "kubernetes_namespace_v1" "suse_ai_ns" {
   depends_on = [null_resource.validate_kubernetes_connection]
@@ -50,7 +111,7 @@ resource "helm_release" "cert_manager" {
   chart      = "cert-manager"
   timeout    = 600
   version    = "1.19.3"
-  
+
   repository_username = var.registry_username
   repository_password = var.registry_password
 
@@ -317,7 +378,7 @@ EOF
       sudo /var/lib/rancher/rke2/bin/kubectl apply --kubeconfig /etc/rancher/rke2/rke2.yaml -f gateway-secure.yaml
       EOT
     ]
-   
+
     connection {
       type        = "ssh"
       user        = var.ssh_username

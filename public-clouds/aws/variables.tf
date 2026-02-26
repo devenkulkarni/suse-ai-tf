@@ -135,3 +135,9 @@ variable "rancher_insecure" {
   type        = bool
   default     = false
 }
+
+variable "longhorn_chart_version" {
+  description = "Specifies the longhorn chart version."
+  type        = string
+  default     = "v1.9.2"
+}

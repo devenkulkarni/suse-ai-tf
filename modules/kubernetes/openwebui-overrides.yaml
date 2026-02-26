@@ -5,13 +5,13 @@ ollamaUrls:
 - http://ollama.suse-ai.svc.cluster.local:11434
 persistence:
   enabled: true
-  storageClass: local-path
+  storageClass: longhorn-single-replica
 ollama:
   enabled: false
 pipelines:
   enabled: false
   persistence:
-    storageClass: local-path
+    storageClass: longhorn-single-replica
 ingress:
   enabled: false
 #  class: ""

@@ -74,3 +74,9 @@ variable "rke2_version" {
   type        = string
   default     = "v1.30.2+rke2r1"
 }
+
+variable "longhorn_chart_version" {
+  description = "Specifies the longhorn chart version"
+  type        = string
+  default     = "v1.9.2"
+}
