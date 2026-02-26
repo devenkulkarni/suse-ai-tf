@@ -135,7 +135,6 @@ resource "null_resource" "apply_rancher_registration" {
 
   provisioner "remote-exec" {
     inline = compact([
-      "set -x",
       "export KUBECONFIG=/tmp/rke2.yaml",
       "echo 'Applying Rancher registration command...'",
       # Execute the command provided by Rancher
