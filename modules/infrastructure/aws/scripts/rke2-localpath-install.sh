@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-# Define absolute paths to avoid PATH issues in remote-exec
+# Define absolute paths and LH version to install
 K8S_BIN="/var/lib/rancher/rke2/bin/kubectl"
 K8S_CONFIG="/etc/rancher/rke2/rke2.yaml"
 
-echo "Starting RKE2 installation..."
+echo "Starting RKE2 and Longhorn installation on SLES"
 
 # 1. Create RKE2 directories
 sudo mkdir -p /etc/rancher/rke2/
@@ -58,9 +58,23 @@ while true; do
     sleep 5
 done
 
-# 6. Apply Local Path Provisioner
-echo "Applying Local Path Provisioner..."
-# We use the absolute path to kubectl and point to the config explicitly
-sudo $K8S_BIN --kubeconfig $K8S_CONFIG apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.31/deploy/local-path-storage.yaml
+# 6. Wait for Nodes to be Ready
+echo "Waiting for kubectl to become responsive..."
+until sudo $K8S_BIN --kubeconfig $K8S_CONFIG get nodes; do
+    sleep 10
+done
 
-echo "RKE2 installation with localpath storage provisioner completed successfully."
+# 7. Install Longhornctl and Longhorn:
+echo "Installing longhornctl..."
+# Download to the current directory
+sudo curl -sSfL -o /usr/local/bin/longhornctl https://github.com/longhorn/cli/releases/download/${longhorn_chart_version}/longhornctl-linux-amd64
+sudo chmod +x /usr/local/bin/longhornctl
+
+echo "Installing preflight...."
+# Use the absolute path and pass the KUBECONFIG variable
+sudo KUBECONFIG=$K8S_CONFIG /usr/local/bin/longhornctl install preflight
+
+echo "Verify precheck...."
+sudo KUBECONFIG=$K8S_CONFIG /usr/local/bin/longhornctl check preflight
+
+echo "RKE2 installation completed successfully."

@@ -71,8 +71,15 @@ variable "gpu_operator_ns" {
   default     = "gpu-operator"
 }
 
+<<<<<<< HEAD
 variable "letsencrypt_acme_server" {
   type        = string
   description = "Acme server"
   default     = "https://acme-staging-v02.api.letsencrypt.org/directory"
+=======
+variable "longhorn_chart_version" {
+  type        = string
+  description = "Chart version for longhorn"
+  default     = "v1.9.2"
+>>>>>>> 4d6b80c (LH implementation testing WIP)
 }

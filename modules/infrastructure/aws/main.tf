@@ -80,7 +80,7 @@ resource "aws_route_table_association" "public_assoc" {
 resource "aws_security_group" "default" {
   name        = "${var.prefix}-sg"
   description = "Allow RKE2 and SSH"
-  vpc_id      = aws_vpc.default_vpc.id 
+  vpc_id      = aws_vpc.default_vpc.id
 
   ingress {
     description = "SSH"
@@ -280,8 +280,9 @@ resource "null_resource" "rke2_installation" {
   provisioner "remote-exec" {
     inline = [
       templatefile("${path.module}/scripts/rke2-localpath-install.sh", {
-        public_ip    = aws_instance.opensuse_gpu[0].public_ip
-        rke2_version = var.rke2_version
+        public_ip              = aws_instance.opensuse_gpu[0].public_ip
+        rke2_version           = var.rke2_version
+        longhorn_chart_version = var.longhorn_chart_version
       })
     ]
 

@@ -20,4 +20,4 @@ ollama:
     nvidiaResource: "nvidia.com/gpu"
 persistentVolume:
   enabled: true
-  storageClass: local-path
+  storageClass: longhorn-single-replica

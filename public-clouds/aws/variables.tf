@@ -141,3 +141,9 @@ variable "instance_count" {
   type        = number
   default     = 3
 }
+
+variable "longhorn_chart_version" {
+  description = "Specifies the longhorn chart version."
+  type        = string
+  default     = "v1.9.2"
+}

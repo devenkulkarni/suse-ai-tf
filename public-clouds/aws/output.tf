@@ -1,6 +1,6 @@
 output "suse_ai_webui_url" {
   description = "URL for accessing the SUSE AI webUI"
-  value = "suse-ai.${module.infrastructure.instance_public_ip}.sslip.io"
+  value       = "suse-ai.${module.infrastructure.instance_public_ip}.sslip.io"
 }
 
 output "instance_public_ip" {
