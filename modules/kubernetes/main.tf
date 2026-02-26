@@ -260,7 +260,7 @@ resource "null_resource" "wait_for_traefik" {
 }
 
 resource "null_resource" "suse_ai_gateway_init" {
-  depends_on = [helm_release.cert_manager]
+  depends_on = [helm_release.cert_manager, null_resource.wait_for_traefik]
 
   provisioner "remote-exec" {
     inline = [
@@ -309,12 +309,12 @@ resource "null_resource" "cert_manager_issuer" {
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: letsencrypt-stg
+  name: letsencrypt-cert-issuer
 spec:
   acme:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    server: ${var.letsencrypt_acme_server}
     privateKeySecretRef:
-      name: letsencrypt-stg
+      name: letsencrypt-secret
     solvers:
     - http01:
         gatewayHTTPRoute:
@@ -342,7 +342,7 @@ EOF
 
 ## 2. Create the Certificate (Produces the secret: suse-ai-tls)
 resource "null_resource" "suse_ai_cert" {
-  depends_on = [null_resource.cert_manager_issuer]
+  depends_on = [null_resource.cert_manager_issuer, null_resource.suse_ai_gateway_init]
 
   provisioner "remote-exec" {
     inline = [
@@ -356,7 +356,7 @@ metadata:
 spec:
   secretName: suse-ai-tls
   issuerRef:
-    name: letsencrypt-stg
+    name: letsencrypt-cert-issuer
     kind: ClusterIssuer
   commonName: suse-ai.${var.instance_public_ip}.sslip.io
   dnsNames:
@@ -377,7 +377,7 @@ EOF
 }
 
 resource "null_resource" "suse_ai_gateway_secure" {
-  depends_on = [null_resource.suse_ai_cert]
+  depends_on = [null_resource.suse_ai_cert, null_resource.suse_ai_gateway_init]
 
   provisioner "remote-exec" {
     inline = [
@@ -470,6 +470,11 @@ resource "null_resource" "open_webui_httproute" {
 
   provisioner "remote-exec" {
     inline = [
+      # 1. Wait for the Gateway to be accepted by the controller
+      "echo 'Waiting for suse-ai-gateway to be Accepted...'",
+      "sudo /var/lib/rancher/rke2/bin/kubectl wait --kubeconfig /etc/rancher/rke2/rke2.yaml --for=condition=Accepted gateway/suse-ai-gateway -n ${var.suse_ai_namespace} --timeout=300s",
+
+      # 2. Create the HTTPRoute manifest
       <<-EOT
       cat <<EOF > openwebui-route.yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -492,9 +497,11 @@ spec:
     - name: open-webui
       port: 80
 EOF
-      echo "Applying HTTPROUTE for openwebui...."
-      sudo /var/lib/rancher/rke2/bin/kubectl apply --kubeconfig /etc/rancher/rke2/rke2.yaml -f openwebui-route.yaml
       EOT
+      ,
+      # 3. Apply the route
+      "echo 'Applying HTTPROUTE for openwebui....'",
+      "sudo /var/lib/rancher/rke2/bin/kubectl apply --kubeconfig /etc/rancher/rke2/rke2.yaml -f openwebui-route.yaml"
     ]
 
     connection {
@@ -505,4 +512,3 @@ EOF
     }
   }
 }
-
