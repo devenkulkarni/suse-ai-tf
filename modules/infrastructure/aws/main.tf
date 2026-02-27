@@ -282,7 +282,6 @@ resource "null_resource" "rke2_installation" {
       templatefile("${path.module}/scripts/rke2-localpath-install.sh", {
         public_ip              = aws_instance.opensuse_gpu[0].public_ip
         rke2_version           = var.rke2_version
-        longhorn_chart_version = var.longhorn_chart_version
       })
     ]
 
