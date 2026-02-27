@@ -18,9 +18,39 @@ resource "helm_release" "longhorn" {
 
   # This ensures Helm waits for all pods to be ready
   wait = true
+}
+
+# This resource handles the data loss safety lock before Longhorn is uninstalled
+resource "null_resource" "longhorn_uninstaller_patch" {
+  # Merge all data into ONE triggers block. 
+  # This saves these values into the .tfstate file so they are available at destroy time.
+  triggers = {
+    helm_release_id = helm_release.longhorn.id
+    ssh_user        = var.ssh_username
+    ssh_key         = var.ssh_private_key_content
+    ssh_host        = var.instance_public_ip
+  }
+
+  provisioner "remote-exec" {
+    when    = destroy
+    inline = [
+      "echo 'Enabling deletingConfirmationFlag in Longhorn...'",
+      "sudo /var/lib/rancher/rke2/bin/kubectl patch settings.longhorn.io deleting-confirmation-flag -n longhorn-system --type=merge -p '{\"value\":\"true\"}' --kubeconfig /etc/rancher/rke2/rke2.yaml || echo 'Setting already patched or unavailable'"
+    ]
+
+    connection {
+      type        = "ssh"
+      # We reference 'self.triggers' because 'var.xyz' is not accessible during destroy
+      user        = self.triggers.ssh_user
+      private_key = self.triggers.ssh_key
+      host        = self.triggers.ssh_host
+    }
+  }
 
   lifecycle {
-    prevent_destroy = true
+    # This prevents Terraform from trying to re-run or recreate this 
+    # resource if your IP or variables change slightly during an update.
+    ignore_changes = all
   }
 }
 
