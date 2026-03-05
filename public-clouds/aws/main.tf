@@ -97,6 +97,7 @@ module "kubernetes" {
   registry_password      = var.registry_password
   suse_ai_namespace      = var.suse_ai_namespace
   cert_manager_namespace = var.cert_manager_namespace
+  deployer_chart_version = var.deployer_chart_version
   gpu_operator_ns        = var.gpu_operator_ns
   ssh_username           = local.ssh_username
 }
