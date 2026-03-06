@@ -12,7 +12,7 @@ zone   = "us-west-2a"
 instance_type = "g4dn.xlarge"
 
 # Specify the OS disk size in GB:
-os_disk_size = 150
+os_disk_size = 400
 
 # Specify whether a new SSH key pair needs to be created for the instance
 create_ssh_key_pair = true

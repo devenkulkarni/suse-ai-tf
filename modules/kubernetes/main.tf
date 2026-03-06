@@ -13,6 +13,10 @@ resource "helm_release" "longhorn" {
     {
       name  = "defaultSettings.storageMinimalAvailablePercentage"
       value = "10"
+    },
+    {
+      name  = "defaultSettings.storageReservedPercentageForDefaultDisk"
+      value = "10"
     }
   ]
 
@@ -32,14 +36,14 @@ resource "null_resource" "longhorn_uninstaller_patch" {
   }
 
   provisioner "remote-exec" {
-    when    = destroy
+    when = destroy
     inline = [
       "echo 'Enabling deletingConfirmationFlag in Longhorn...'",
       "sudo /var/lib/rancher/rke2/bin/kubectl patch settings.longhorn.io deleting-confirmation-flag -n longhorn-system --type=merge -p '{\"value\":\"true\"}' --kubeconfig /etc/rancher/rke2/rke2.yaml || echo 'Setting already patched or unavailable'"
     ]
 
     connection {
-      type        = "ssh"
+      type = "ssh"
       # We reference 'self.triggers' because 'var.xyz' is not accessible during destroy
       user        = self.triggers.ssh_user
       private_key = self.triggers.ssh_key
