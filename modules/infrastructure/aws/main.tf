@@ -280,8 +280,8 @@ resource "null_resource" "rke2_installation" {
   provisioner "remote-exec" {
     inline = [
       templatefile("${path.module}/scripts/rke2-localpath-install.sh", {
-        public_ip              = aws_instance.opensuse_gpu[0].public_ip
-        rke2_version           = var.rke2_version
+        public_ip    = aws_instance.opensuse_gpu[0].public_ip
+        rke2_version = var.rke2_version
       })
     ]
 
