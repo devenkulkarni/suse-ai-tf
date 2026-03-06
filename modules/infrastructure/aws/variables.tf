@@ -25,7 +25,7 @@ variable "instance_type" {
 variable "os_disk_size" {
   description = "Size of the root OS disk in GB"
   type        = number
-  default     = 150
+  default     = 400
 }
 
 variable "create_ssh_key_pair" {
