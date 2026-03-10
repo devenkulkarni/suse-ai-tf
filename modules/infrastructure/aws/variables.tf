@@ -25,7 +25,7 @@ variable "instance_type" {
 variable "os_disk_size" {
   description = "Size of the root OS disk in GB"
   type        = number
-  default     = 150
+  default     = 400
 }
 
 variable "create_ssh_key_pair" {
@@ -73,4 +73,10 @@ variable "rke2_version" {
   description = "The version of RKE2 to install"
   type        = string
   default     = "v1.30.2+rke2r1"
+}
+
+variable "longhorn_chart_version" {
+  description = "Specifies the longhorn chart version"
+  type        = string
+  default     = "v1.9.2"
 }

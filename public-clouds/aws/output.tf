@@ -1,3 +1,8 @@
+output "suse_ai_webui_url" {
+  description = "URL for accessing the SUSE AI webUI"
+  value       = "suse-ai.${module.infrastructure.instance_public_ip}.sslip.io"
+}
+
 output "instance_public_ip" {
   description = "The public IP of the openSUSE VM"
   value       = module.infrastructure.instance_public_ip

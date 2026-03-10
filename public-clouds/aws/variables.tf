@@ -20,7 +20,7 @@ variable "instance_type" {
 
 variable "os_disk_size" {
   type    = number
-  default = 150
+  default = 400
 }
 
 variable "ssh_username" {
@@ -134,4 +134,10 @@ variable "rancher_insecure" {
   description = "Specifies whether to allow insecure connections to the Rancher API. Default is 'false'."
   type        = bool
   default     = false
+}
+
+variable "longhorn_chart_version" {
+  description = "Specifies the longhorn chart version."
+  type        = string
+  default     = "v1.9.2"
 }

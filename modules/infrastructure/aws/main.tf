@@ -79,7 +79,7 @@ resource "aws_route_table_association" "public_assoc" {
 resource "aws_security_group" "default" {
   name        = "${var.prefix}-sg"
   description = "Allow RKE2 and SSH"
-  vpc_id      = aws_vpc.default_vpc.id 
+  vpc_id      = aws_vpc.default_vpc.id
 
   ingress {
     description = "SSH"

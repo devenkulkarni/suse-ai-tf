@@ -2,3 +2,4 @@ prefix       = "suse-ai-aws"
 rke2_version = "v1.32.10+rke2r1" # Check RKE2 releases at - https://github.com/rancher/rke2/releases
 region = "us-west-2"
 zone   = "us-west-2a"
+os_disk_size = 400

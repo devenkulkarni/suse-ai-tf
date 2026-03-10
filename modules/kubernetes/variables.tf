@@ -70,3 +70,9 @@ variable "gpu_operator_ns" {
   description = "Namespace for the NVIDIA GPU operator"
   default     = "gpu-operator"
 }
+
+variable "longhorn_chart_version" {
+  type        = string
+  description = "Chart version for longhorn"
+  default     = "v1.9.2"
+}

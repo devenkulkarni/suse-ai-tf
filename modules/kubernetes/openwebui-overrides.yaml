@@ -5,20 +5,20 @@ ollamaUrls:
 - http://ollama.suse-ai.svc.cluster.local:11434
 persistence:
   enabled: true
-  storageClass: local-path
+  storageClass: longhorn-single-replica
 ollama:
   enabled: false
 pipelines:
   enabled: false
   persistence:
-    storageClass: local-path
+    storageClass: longhorn-single-replica
 ingress:
-  enabled: true
-  class: ""
-  annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true" ## Remove comments if using TLS and cert-manager to create certs for your host.
-  host: suse-ollama-webui 
-  tls: true # Set to true if you have a domain.
+  enabled: false
+#  class: ""
+#  annotations:
+#    nginx.ingress.kubernetes.io/ssl-redirect: "true" ## Remove comments if using TLS and cert-manager to create certs for your host.
+#  host: suse-ollama-webui 
+#  tls: true # Set to true if you have a domain.
 extraEnvVars:
 - name: DEFAULT_MODELS
   value: "gemma:2b"

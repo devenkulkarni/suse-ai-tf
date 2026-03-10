@@ -2,22 +2,22 @@ global:
   imagePullSecrets:
   - application-collection
 cluster:
-  enabled: False
+  enabled: true
 standalone:
   persistence:
     persistentVolumeClaim:
-      storageClass: local-path
+      storageClass: longhorn-single-replica
 etcd:
   replicaCount: 1
   persistence:
-    storageClassName: local-path
+    storageClassName: longhorn-single-replica
 minio:
   mode: standalone
   replicas: 1
   rootUser: "admin"
   rootPassword: "adminminio"
   persistence:
-    storageClass: local-path
+    storageClass: longhorn-single-replica
     size: 100Gi
   resources:
     requests:
@@ -44,5 +44,5 @@ kafka:
     resources:
       requests:
         storage: 8Gi
-    storageClassName: "local-path"
+    storageClassName: "longhorn-xfs-single-replica"
 
