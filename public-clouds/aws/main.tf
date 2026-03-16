@@ -29,29 +29,6 @@ module "infrastructure" {
   ssh_private_key_path = var.ssh_private_key_path
   ssh_public_key_path  = var.ssh_public_key_path
   existing_key_name    = var.existing_key_name
-  vpc_id               = var.vpc_id
-  subnet_id            = var.subnet_id
-  ip_cidr_range        = var.ip_cidr_range
-  rke2_version         = var.rke2_version
-}
-
-module "infrastructure_additional" {
-  source = "../../modules/infrastructure/aws"
-
-  depends_on           = [module.infrastructure]
-  prefix               = var.prefix
-  region               = var.region
-  zone                 = var.zone
-  instance_type        = var.instance_type
-  instance_count       = var.instance_count - 1
-  os_disk_size         = var.os_disk_size
-  create_ssh_key_pair  = var.create_ssh_key_pair
-  ssh_private_key_path = var.ssh_private_key_path
-  ssh_public_key_path  = var.ssh_public_key_path
-  existing_key_name    = var.existing_key_name
-  vpc_id               = var.vpc_id
-  subnet_id            = var.subnet_id
-  ip_cidr_range        = var.ip_cidr_range
   rke2_version         = var.rke2_version
 }
 
