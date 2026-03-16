@@ -135,3 +135,9 @@ variable "rancher_insecure" {
   type        = bool
   default     = false
 }
+
+variable "instance_count" {
+  description = "The number of AWS instances to install"
+  type        = number
+  default     = 3
+}

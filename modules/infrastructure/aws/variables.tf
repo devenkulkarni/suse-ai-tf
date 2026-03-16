@@ -74,3 +74,9 @@ variable "rke2_version" {
   type        = string
   default     = "v1.30.2+rke2r1"
 }
+
+variable "instance_count" {
+  description = "The number of AWS instances to install"
+  type        = number
+  default     = 3
+}

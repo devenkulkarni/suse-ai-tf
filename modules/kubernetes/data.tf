@@ -7,8 +7,20 @@ resource "null_resource" "validate_kubernetes_connection" {
 
   provisioner "local-exec" {
     command = <<-EOT
-      echo "Validating Kubernetes connection..."
-      kubectl --kubeconfig=${var.kubeconfig_path} get nodes || (echo "Failed to connect to Kubernetes cluster" && exit 1)
-    EOT
+echo "Waiting for Kubernetes API..."
+
+for i in {1..30}; do
+  if kubectl --kubeconfig=${var.kubeconfig_path} get nodes >/dev/null 2>&1; then
+    echo "Kubernetes API reachable"
+    exit 0
+  fi
+
+  echo "API not ready yet... retrying"
+  sleep 10
+done
+
+echo "Failed to connect to Kubernetes cluster"
+exit 1
+EOT
   }
 }

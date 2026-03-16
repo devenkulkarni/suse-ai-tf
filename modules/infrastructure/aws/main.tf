@@ -1,7 +1,7 @@
 locals {
   private_ssh_key_path = var.ssh_private_key_path == null ? "${path.cwd}/${var.prefix}-ssh_private_key.pem" : var.ssh_private_key_path
   public_ssh_key_path  = var.ssh_public_key_path == null ? "${path.cwd}/${var.prefix}-ssh_public_key.pem" : var.ssh_public_key_path
-  instance_count       = 1
+  instance_count       = 3
   # openSUSE Marketplace default user
   ssh_username = "ec2-user"
 }
@@ -10,6 +10,7 @@ resource "tls_private_key" "ssh_private_key" {
   count     = var.create_ssh_key_pair ? 1 : 0
   algorithm = "ED25519"
 }
+
 
 resource "aws_key_pair" "generated_key" {
   count      = var.create_ssh_key_pair ? 1 : 0
@@ -111,6 +112,99 @@ resource "aws_security_group" "default" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+  description = "RKE2 node join"
+  from_port   = 9345
+  to_port     = 9345
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+ingress {
+  description = "kubelet Metrics"
+  from_port   = 10250
+  to_port     = 10250
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+ingress {
+  description = "etcd client port"
+  from_port   = 2379
+  to_port     = 2379
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+ingress {
+  description = "etcd peer port"
+  from_port   = 2380
+  to_port     = 2380
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+ingress {
+  description = "etcd metrics port"
+  from_port   = 2381
+  to_port     = 2381
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+ingress {
+  description = "kubelet Metrics"
+  from_port   = 10250
+  to_port     = 10250
+  protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+
+ingress {
+    description = "Kubernetes NodePorts"
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Canal VXLAN
+  ingress {
+    description = "Canal VXLAN overlay"
+    from_port   = 8472
+    to_port     = 8472
+    protocol    = "udp"
+    self        = true
+  }
+
+  # Canal health checks
+  ingress {
+    description = "Canal health checks"
+    from_port   = 9099
+    to_port     = 9099
+    protocol    = "tcp"
+    self        = true
+  }
+
+  # WireGuard IPv4
+  ingress {
+    description = "Canal WireGuard IPv4"
+    from_port   = 51820
+    to_port     = 51820
+    protocol    = "udp"
+    self        = true
+  }
+
+  # WireGuard IPv6 / dual stack
+  ingress {
+    description = "Canal WireGuard IPv6"
+    from_port   = 51821
+    to_port     = 51821
+    protocol    = "udp"
+    self        = true
+  }
+
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -131,6 +225,8 @@ resource "aws_security_group" "default" {
 #  allocation_id = aws_eip.ec2_eip.id
 #}
 
+
+
 resource "aws_instance" "opensuse_gpu" {
   count         = local.instance_count
   ami           = data.aws_ami.opensuse_leap.id
@@ -148,11 +244,13 @@ resource "aws_instance" "opensuse_gpu" {
   user_data = templatefile("${path.module}/scripts/startupscript.tftpl", {})
 
   tags = {
-    Name = "${var.prefix}-opensuse-rke2"
+    Name = "${var.prefix}-${count.index + 1}"
   }
 }
 
 resource "null_resource" "wait_for_gpu" {
+
+  count = local.instance_count
   depends_on = [aws_instance.opensuse_gpu]
 
   provisioner "remote-exec" {
@@ -160,7 +258,7 @@ resource "null_resource" "wait_for_gpu" {
       type        = "ssh"
       user        = local.ssh_username
       private_key = var.create_ssh_key_pair ? tls_private_key.ssh_private_key[0].private_key_openssh : file(local.private_ssh_key_path)
-      host        = aws_instance.opensuse_gpu[0].public_ip
+      host        = aws_instance.opensuse_gpu[count.index].public_ip
       timeout     = "15m"
     }
 
@@ -196,6 +294,45 @@ resource "null_resource" "rke2_installation" {
   }
 }
 
+
+resource "null_resource" "join_additional_servers" {
+  count = local.instance_count - 1
+
+  depends_on = [
+    null_resource.rke2_installation,
+    null_resource.get_server_token
+    ]
+
+  provisioner "file" {
+    source      = "./rke2-token"
+    destination = "/tmp/rke2-token"
+
+    connection {
+      type        = "ssh"
+      host        = aws_instance.opensuse_gpu[count.index + 1].public_ip
+      user        = local.ssh_username
+      private_key = tls_private_key.ssh_private_key[0].private_key_openssh
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+        templatefile("${path.module}/scripts/rke2-localpath-join-server-install.sh", {
+        public_ip    = aws_instance.opensuse_gpu[count.index + 1].public_ip
+        private_ip   = aws_instance.opensuse_gpu[0].private_ip
+        rke2_version = var.rke2_version
+      })
+      ]
+
+    connection {
+      type        = "ssh"
+      host        = aws_instance.opensuse_gpu[count.index + 1].public_ip
+      user        = local.ssh_username
+      private_key = tls_private_key.ssh_private_key[0].private_key_openssh
+    }
+
+  }
+ }
 resource "null_resource" "retrieve_kubeconfig" {
   depends_on = [null_resource.rke2_installation]
 
@@ -235,5 +372,37 @@ resource "null_resource" "retrieve_kubeconfig" {
   provisioner "local-exec" {
     when    = destroy
     command = "rm -f ./kubeconfig-rke2.yaml"
+  }
+}
+
+
+resource "null_resource" "get_server_token" {
+
+  depends_on = [null_resource.rke2_installation]
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo cat /var/lib/rancher/rke2/server/node-token > /tmp/rke2-token"
+    ]
+
+    connection {
+      type        = "ssh"
+      host        = aws_instance.opensuse_gpu[0].public_ip
+      user        = local.ssh_username
+      private_key = tls_private_key.ssh_private_key[0].private_key_openssh
+    }
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+scp -o StrictHostKeyChecking=no \
+-i ${local.private_ssh_key_path} \
+${local.ssh_username}@${aws_instance.opensuse_gpu[0].public_ip}:/tmp/rke2-token ./rke2-token
+EOT
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "rm -f ./rke2-token"
   }
 }
