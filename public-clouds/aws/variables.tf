@@ -113,7 +113,7 @@ variable "gpu_operator_ns" {
 variable "deployer_chart_version" {
   type        = string
   description = "Chart version for the suse-ai-deployer helmchart"
-  default     = "1.1.0"
+  default     = "1.2.0"
 }
 
 variable "rancher_api_url" {

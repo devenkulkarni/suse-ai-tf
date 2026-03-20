@@ -16,10 +16,8 @@ ollama:
     models:
       pull:
       - "gemma:2b"
-      - "llama3.1"
       run:
       - "gemma:2b"
-      - "llama3.1"
     gpu:
      enabled: true
      type: 'nvidia'
@@ -86,8 +84,8 @@ milvus:
       storageClassName: local-path
   minio:
     mode: standalone
-    rootUser: "admin"
-    rootPassword: "adminminio"
+    rootUser: "minioadmin"
+    rootPassword: "minioadmin"
     persistence:
       storageClass: local-path
       size: 5Gi
@@ -95,7 +93,10 @@ milvus:
       requests:
         memory: 1024Mi
   kafka:
-    enabled: false
+    enabled: true
+    persistence:
+      enabled: true
+      storageClassName: local-path
 pytorch:
   enabled: false
 vllm:
