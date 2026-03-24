@@ -80,5 +80,5 @@ variable "letsencrypt_acme_server" {
 variable "deployer_chart_version" {
   type        = string
   description = "Chart version for the suse-ai-deployer helm chart"
-  default     = "1.2.0"
+  default     = "1.1.0"
 }

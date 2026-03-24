@@ -73,7 +73,7 @@ milvus:
   #To learn more about the entries, helm show values oci://dp.apps.rancher.io/charts/milvus
   enabled: true
   cluster:
-    enabled: true
+    enabled: false
   standalone:
     persistence:
       persistentVolumeClaim:
@@ -83,14 +83,9 @@ milvus:
     persistence:
       storageClassName: local-path
   minio:
-    enabled: true 
     mode: standalone
-    rootUser: "admin"
-    rootPassword: "rootpassword"
-    users:
-      - accessKey: milvus-user
-        secretKey: milvus-pass123
-        policy: consoleAdmin
+    rootUser: "minioadmin"
+    rootPassword: "minioadmin"
     persistence:
       storageClass: local-path
       size: 5Gi
