@@ -1,0 +1,108 @@
+# This is an custom overrides yaml:
+# - enabling deployment of ollama with GPU.
+# - enabling deployment of mcpo.
+# - enabling deployment of open-webui.
+# - enabling deployment of milvus in standalone mode.
+# - services deployed with suse-ai release name in suse-ai namespace.
+# - SUSE storage [Longhorn].
+# Please update these overrides as needed for your environment.
+global:
+  imagePullSecrets:
+  - application-collection
+ollama:
+  #To learn more about the entries, helm show values oci://dp.apps.rancher.io/charts/ollama
+  enabled: true
+  ollama:
+    models:
+      pull:
+      - "gemma:2b"
+      run:
+      - "gemma:2b"
+    gpu:
+     enabled: true
+     type: 'nvidia'
+     number: 1
+  runtimeClassName: "nvidia"
+  persistentVolume:
+    enabled: true
+    storageClass: longhorn-single-replica
+open-webui-mcpo:
+  #To learn more about the entries, helm show values oci://dp.apps.rancher.io/charts/open-webui-mcpo
+  enabled: true
+  config:
+    mcpServers:
+      memory:
+        command: npx
+        args:
+          - -y
+          - "@modelcontextprotocol/server-memory"
+open-webui:
+  #To learn more about the entries, helm show values oci://dp.apps.rancher.io/charts/open-webui
+  enabled: true
+  ollamaUrls:
+  - http://suse-ai-ollama.suse-ai.svc.cluster.local:11434
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: longhorn-single-replica
+  ollama:
+    enabled: false
+  pipelines:
+    enabled: false
+    extraEnvVars: []
+  ingress:
+    enabled: false
+  extraEnvVars:
+  - name: DEFAULT_MODELS
+    value: "gemma:2b"
+  - name: DEFAULT_USER_ROLE
+    value: "user"
+  - name: ENABLE_SIGNUP
+    value: "true"
+  - name: GLOBAL_LOG_LEVEL
+    value: INFO
+  - name: RAG_EMBEDDING_MODEL
+    value: "sentence-transformers/all-MiniLM-L6-v2"
+  - name: VECTOR_DB
+    value: "milvus"
+  - name: MILVUS_URI
+    value: http://suse-ai-milvus.suse-ai.svc.cluster.local:19530
+  - name: INSTALL_NLTK_DATASETS
+    value: "true"
+milvus:
+  #To learn more about the entries, helm show values oci://dp.apps.rancher.io/charts/milvus
+  enabled: true
+  cluster:
+    enabled: true
+  standalone:
+    persistence:
+      persistentVolumeClaim:
+        storageClass: longhorn-single-replica
+  etcd:
+    replicaCount: 3
+    persistence:
+      storageClassName: longhorn-single-replica
+  minio:
+    mode: distributed
+    replicas: 2
+    rootUser: "admin"
+    rootPassword: "rootpassword"
+    users:
+    - accessKey: milvus-user
+      secretKey: milvus-pass123
+      policy: consoleAdmin
+    persistence:
+      storageClass: longhorn-single-replica
+      size: 10Gi
+    resources:
+      requests:
+        memory: 1024Mi
+  kafka:
+    enabled: true
+    persistence:
+      enabled: true
+      storageClassName: longhorn-xfs-single-replica
+pytorch:
+  enabled: false
+vllm:
+  enabled: false

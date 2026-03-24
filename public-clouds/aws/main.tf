@@ -97,6 +97,7 @@ module "kubernetes" {
   registry_password      = var.registry_password
   suse_ai_namespace      = var.suse_ai_namespace
   cert_manager_namespace = var.cert_manager_namespace
+  deployer_chart_version = var.deployer_chart_version
   gpu_operator_ns        = var.gpu_operator_ns
   ssh_username           = local.ssh_username
 }
@@ -108,6 +109,13 @@ resource "rancher2_cluster" "rancher_cluster" {
   count = var.rancher_api_url != "" ? 1 : 0
 }
 
+
+# Wait for Rancher to generate the cluster registration token
+resource "time_sleep" "wait_for_rancher_token" {
+  count           = var.rancher_api_url != "" ? 1 : 0
+  depends_on      = [rancher2_cluster.rancher_cluster]
+  create_duration = "30s"
+}
 
 # Use a null_resource to execute the registration command on the target node
 resource "null_resource" "apply_rancher_registration" {
@@ -127,14 +135,14 @@ resource "null_resource" "apply_rancher_registration" {
   }
 
   provisioner "remote-exec" {
-    inline = [
+    inline = compact([
       "export KUBECONFIG=/tmp/rke2.yaml",
       "echo 'Applying Rancher registration command...'",
       # Execute the command provided by Rancher
-      "${rancher2_cluster.rancher_cluster[0].cluster_registration_token[0].insecure_command}"
-    ]
+      rancher2_cluster.rancher_cluster[0].cluster_registration_token[0].insecure_command
+    ])
   }
 
   # Ensure the null_resource only runs after the cluster token is generated
-  depends_on = [rancher2_cluster.rancher_cluster]
+  depends_on = [rancher2_cluster.rancher_cluster, time_sleep.wait_for_rancher_token]
 }
