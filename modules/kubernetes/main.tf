@@ -430,10 +430,10 @@ resource "helm_release" "suse_ai_deployer" {
   chart            = "suse-ai-deployer"
   version          = var.deployer_chart_version
   create_namespace = true
-  timeout          = 1200
-  depends_on       = [kubernetes_secret_v1.suse-appco-registry, null_resource.validate_kubernetes_connection, helm_release.cert_manager, helm_release.nvidia_gpu_operator, null_resource.suse_ai_gateway_init, null_resource.suse_ai_gateway_secure]
-
-  values = [file("${path.module}/custom_suseai_deployer_values.yaml")]
+  values           = [file("${path.module}/high_availability_custom_suseai_deployer_values.yaml")]
+  depends_on       = [kubernetes_secret_v1.suse-appco-registry, null_resource.validate_kubernetes_connection, helm_release.cert_manager, helm_release.nvidia_gpu_operator]
+  wait             = false
+  upgrade_install  = true
 }
 
 ## 4. Create HTTPRoute for Open-WebUI
