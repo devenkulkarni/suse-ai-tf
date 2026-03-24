@@ -430,9 +430,9 @@ resource "helm_release" "milvus" {
   chart            = "milvus"
   version          = "4.2.2"
   create_namespace = true
-  timeout          = 600
   depends_on       = [kubernetes_secret_v1.suse-appco-registry, null_resource.validate_kubernetes_connection, helm_release.cert_manager, helm_release.nvidia_gpu_operator]
-
+  wait             = false
+  upgrade_install  = true
   values = [file("${path.module}/milvus-overrides.yaml")]
 }
 
