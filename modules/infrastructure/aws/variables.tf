@@ -70,13 +70,6 @@ variable "rke2_version" {
   default     = "v1.30.2+rke2r1"
 }
 
-<<<<<<< HEAD
-variable "instance_count" {
-  description = "The number of AWS instances to install"
-  type        = number
-  default     = 3
-}
-
 variable "longhorn_chart_version" {
   description = "Specifies the longhorn chart version"
   type        = string

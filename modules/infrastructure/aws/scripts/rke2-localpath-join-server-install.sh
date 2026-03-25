@@ -123,4 +123,3 @@ done
 
 
 echo "RKE2 installation with Longhorn storage provisioner completed successfully for additional servers."
->>>>>>> 02ccc2f (HA RKE2 in SUSE-AI)
