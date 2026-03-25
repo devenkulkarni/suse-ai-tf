@@ -154,11 +154,6 @@ variable "rancher_insecure" {
   default     = false
 }
 
-variable "instance_count" {
-  description = "The number of AWS instances to install"
-  type        = number
-  default     = 3
-}
 
 variable "longhorn_chart_version" {
   description = "Specifies the longhorn chart version."
