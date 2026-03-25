@@ -232,7 +232,7 @@ resource "aws_instance" "opensuse_gpu" {
   ami           = data.aws_ami.opensuse_leap.id
   instance_type = var.instance_type
 
-  key_name               = var.create_ssh_key_pair ? aws_key_pair.generated_key[0].key_name : var.existing_key_name
+  key_name               = var.create_ssh_key_pair ? aws_key_pair.generated_key[0].key_name : null
   vpc_security_group_ids = [aws_security_group.default.id]
   subnet_id              = aws_subnet.default_subnet.id
 

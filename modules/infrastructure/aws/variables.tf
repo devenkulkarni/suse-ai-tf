@@ -46,11 +46,6 @@ variable "ssh_public_key_path" {
   default     = null
 }
 
-variable "existing_key_name" {
-  type    = string
-  default = null
-}
-
 variable "vpc_id" {
   description = "Existing VPC ID (leave null if creating a new VPC)"
   type        = string
