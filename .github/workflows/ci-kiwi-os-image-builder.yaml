@@ -10,58 +10,64 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      iso-file: ${{ steps.upload.outputs.iso-path }}
-      vhd-file: ${{ steps.upload.outputs.vhd-path }}
-      raw-file: ${{ steps.upload.outputs.raw-path }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build ISO with KIWI
+
+      - name: Configure Docker to use btrfs storage driver
+        run: |
+          sudo systemctl stop docker
+          sudo apt-get install -y qemu-utils btrfs-progs
+          sudo qemu-img create /var/lib/docker-storage.btrfs 20g
+          sudo mkfs.btrfs -f /var/lib/docker-storage.btrfs
+          sudo mount /var/lib/docker-storage.btrfs /var/lib/docker
+          echo '{"storage-driver": "btrfs"}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl start docker
+          sudo docker info | grep "Storage Driver"
+
+      - name: Build OEM disk image with KIWI
         run: |
           docker run --rm --privileged --platform linux/amd64 \
+            -v /dev:/dev \
             -v "${BUILD_DIR}":/build opensuse/leap:15.6 bash -c "
               zypper addrepo http://download.opensuse.org/repositories/Virtualization:/Appliances:/Builder/openSUSE_Leap_15.6 kiwi &&
               zypper --gpg-auto-import-keys refresh &&
-              zypper in -y python311-kiwi git binutils qemu-tools squashfs xorriso dosfstools e2fsprogs &&
+              zypper in -y python311-kiwi git binutils qemu-tools squashfs dosfstools e2fsprogs gptfdisk systemd &&
               kiwi system build --description /build --set-repo https://download.opensuse.org/distribution/leap/15.6/repo/oss --target-dir /tmp/kiwi-outputs/ &&
-              cp /tmp/kiwi-outputs/*.iso /build/${IMAGE_NAME}.iso
+              cp /tmp/kiwi-outputs/*.qcow2 /build/${IMAGE_NAME}.qcow2 &&
+              cp /tmp/kiwi-outputs/*.raw /build/${IMAGE_NAME}.raw
             "
+
       - name: Install qemu-utils and tools
         run: sudo apt update && sudo apt install -y qemu-utils jq bzip2 tar
-      - name: Convert ISO to QCOW2
-        run: |
-          ISO_PATH="${BUILD_DIR}/${IMAGE_NAME}.iso"
-          QCOW2_PATH="${BUILD_DIR}/${IMAGE_NAME}.qcow2"
-          qemu-img convert -O qcow2 "$ISO_PATH" "$QCOW2_PATH"
-      - name: Convert ISO to RAW
-        run: |
-          ISO_PATH="${BUILD_DIR}/${IMAGE_NAME}.iso"
-          RAW_PATH="${BUILD_DIR}/${IMAGE_NAME}.raw"
-          qemu-img convert -O raw "$ISO_PATH" "$RAW_PATH"
-          MB=$((1024 * 1024))
-          SIZE=$(qemu-img info -f raw --output json "$RAW_PATH" | jq -r '.["virtual-size"]')
-          ROUNDED_SIZE=$((($SIZE / $MB + 1) * $MB))
-          qemu-img resize -f raw "$RAW_PATH" "$ROUNDED_SIZE"
+
       - name: Convert RAW to VHD
         run: |
           RAW_PATH="${BUILD_DIR}/${IMAGE_NAME}.raw"
           VHD_PATH="${BUILD_DIR}/${IMAGE_NAME}.vhd"
+          MB=$((1024 * 1024))
+          SIZE=$(qemu-img info -f raw --output json "$RAW_PATH" | jq -r '.["virtual-size"]')
+          ROUNDED_SIZE=$(( ($SIZE / $MB + 1) * $MB ))
+          qemu-img resize -f raw "$RAW_PATH" "$ROUNDED_SIZE"
           qemu-img convert -f raw -O vpc -o subformat=fixed,force_size "$RAW_PATH" "$VHD_PATH"
+
       - name: Prepare RAW for Google Cloud
         run: |
           RAW_PATH="${BUILD_DIR}/${IMAGE_NAME}.raw"
           OUT_DIR="${BUILD_DIR}"
           cp "$RAW_PATH" "${OUT_DIR}/disk.raw"
           tar --format=oldgnu -C "$OUT_DIR" -czf "${OUT_DIR}/${IMAGE_NAME}.raw.tar.gz" disk.raw
+          rm "${OUT_DIR}/disk.raw"
+
       - name: List files before upload
         run: ls -lh "${BUILD_DIR}"
+
       - name: Upload artifact
         id: upload
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: suse-ai-tf-os-image
           path: |
-            ${{ env.BUILD_DIR }}/${{ env.IMAGE_NAME }}.iso
+            ${{ env.BUILD_DIR }}/${{ env.IMAGE_NAME }}.qcow2
             ${{ env.BUILD_DIR }}/${{ env.IMAGE_NAME }}.vhd
             ${{ env.BUILD_DIR }}/${{ env.IMAGE_NAME }}.raw.tar.gz
 
@@ -72,17 +78,20 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
       - name: Download artifact from build
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: suse-ai-tf-os-image
           path: ./artifact
+
       - name: Install GitHub CLI
         run: sudo apt update && sudo apt install -y gh
+
       - name: Create Release
         run: |
           gh release create "build-${GITHUB_RUN_NUMBER}" \
-            ./artifact/${{ env.IMAGE_NAME }}.iso \
+            ./artifact/${{ env.IMAGE_NAME }}.qcow2 \
             ./artifact/${{ env.IMAGE_NAME }}.vhd \
             ./artifact/${{ env.IMAGE_NAME }}.raw.tar.gz \
             --title "Certified openSUSE Leap 15.6 image for suse-ai-tf - build-${GITHUB_RUN_NUMBER}" \
