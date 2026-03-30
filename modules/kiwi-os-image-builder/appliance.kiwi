@@ -13,8 +13,14 @@
         <timezone>UTC</timezone>
         <rpm-excludedocs>true</rpm-excludedocs>
         <rpm-check-signatures>false</rpm-check-signatures>
-        <type image="iso" firmware="efi" kernelcmdline="console=ttyS0 nvme_core.io_timeout=255">
-            <bootloader name="grub2" timeout="10"/>
+	<type image="oem" filesystem="ext4" firmware="efi"
+              kernelcmdline="console=ttyS0 nvme_core.io_timeout=255"
+              format="qcow2">
+           <bootloader name="grub2" timeout="10"/>
+           <oemconfig>
+               <oem-resize>true</oem-resize>
+               <oem-systemsize>30720</oem-systemsize>
+           </oemconfig>
         </type>
     </preferences>
     <repository type="rpm-md">
@@ -22,7 +28,9 @@
     </repository>
     <packages type="image">
         <!-- Base system / Boot -->
-        <package name="dracut-kiwi-live"/>
+        <package name="dracut-kiwi-oem-repart"/>
+        <package name="dracut-kiwi-lib"/>
+        <package name="gptfdisk"/>
         <package name="kernel-default"/>
         <package name="kernel-devel"/>
         <package name="grub2"/>
@@ -36,6 +44,8 @@
         <package name="udev"/>
         <package name="procps"/>
         <package name="filesystem"/>
+        <package name="xfsprogs"/>
+        <package name="e2fsprogs"/>
         <!-- System utilities -->
         <package name="util-linux"/>
         <package name="tar"/>
