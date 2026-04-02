@@ -71,7 +71,6 @@ variable "gpu_operator_ns" {
   default     = "gpu-operator"
 }
 
-
 variable "longhorn_chart_version" {
   type        = string
   description = "Chart version for longhorn"
@@ -82,4 +81,10 @@ variable "letsencrypt_acme_server" {
   type        = string
   description = "Acme server"
   default     = "https://acme-staging-v02.api.letsencrypt.org/directory"
+}
+
+variable "deployer_chart_version" {
+  type        = string
+  description = "Chart version for the suse-ai-deployer helm chart"
+  default     = "1.2.0"
 }

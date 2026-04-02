@@ -422,51 +422,23 @@ EOF
   }
 }
 
-## Adding Milvus using helm:
-resource "helm_release" "milvus" {
-  name             = "milvus"
-  namespace        = var.suse_ai_namespace
+## Adding SUSE-AI-DEPLOYER using helm to deploy SUSE AI components:
+resource "helm_release" "suse_ai_deployer" {
+  name             = "suse-ai"
+  namespace        = "suse-ai"
   repository       = "oci://${var.registry_name}/charts"
-  chart            = "milvus"
-  version          = "4.2.2"
+  chart            = "suse-ai-deployer"
+  version          = var.deployer_chart_version
   create_namespace = true
-  timeout          = 600
+  values           = [file("${path.module}/high_availability_custom_suseai_deployer_values.yaml")]
   depends_on       = [kubernetes_secret_v1.suse-appco-registry, null_resource.validate_kubernetes_connection, helm_release.cert_manager, helm_release.nvidia_gpu_operator]
-
-  values = [file("${path.module}/milvus-overrides.yaml")]
-}
-
-## Adding Ollama using helm:
-resource "helm_release" "ollama" {
-  name             = "ollama"
-  namespace        = var.suse_ai_namespace
-  repository       = "oci://${var.registry_name}/charts"
-  chart            = "ollama"
-  version          = "1.33.0"
-  create_namespace = true
-  timeout          = 900
-  depends_on       = [helm_release.milvus, null_resource.validate_kubernetes_connection, helm_release.nvidia_gpu_operator]
-
-  values = [file("${path.module}/ollama-overrides.yaml")]
-}
-
-## Adding Open-WebUI using helm:
-resource "helm_release" "open_webui" {
-  name             = "open-webui"
-  namespace        = var.suse_ai_namespace
-  repository       = "oci://${var.registry_name}/charts"
-  chart            = "open-webui"
-  version          = "8.19.0"
-  create_namespace = true
-  timeout          = 600
-  depends_on       = [helm_release.milvus, helm_release.ollama]
-
-  values = [file("${path.module}/openwebui-overrides.yaml")]
+  wait             = false
+  upgrade_install  = true
 }
 
 ## 4. Create HTTPRoute for Open-WebUI
 resource "null_resource" "open_webui_httproute" {
-  depends_on = [helm_release.open_webui, null_resource.suse_ai_gateway_init, null_resource.suse_ai_gateway_secure]
+  depends_on = [helm_release.suse_ai_deployer, null_resource.suse_ai_gateway_init, null_resource.suse_ai_gateway_secure]
 
   provisioner "remote-exec" {
     inline = [

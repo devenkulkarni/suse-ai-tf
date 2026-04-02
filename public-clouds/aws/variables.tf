@@ -128,6 +128,12 @@ variable "gpu_operator_ns" {
   default     = "gpu-operator"
 }
 
+variable "deployer_chart_version" {
+  type        = string
+  description = "Chart version for the suse-ai-deployer helmchart"
+  default     = "1.2.0"
+}
+
 variable "rancher_api_url" {
   description = "Specifies the Rancher API endpoint used to manage the Harvester cluster. Default is empty."
   type        = string
@@ -153,7 +159,6 @@ variable "rancher_insecure" {
   type        = bool
   default     = false
 }
-
 
 variable "longhorn_chart_version" {
   description = "Specifies the longhorn chart version."

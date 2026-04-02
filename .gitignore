@@ -1,9 +1,30 @@
+# Terraform state
 terraform.tfstate
 terraform.tfstate.backup
-terraform.tfvars
-.terraform.lock.hcl
-kubeconfig-rke2.yaml
-.terraform*
-*.pub
-*key
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
 
+# All tfvars in all directories (but keep .example files)
+**/*.tfvars
+!**/*.tfvars.example
+
+# Terraform internals
+.terraform/
+.terraform.lock.hcl
+**/.terraform/
+**/.terraform.lock.hcl
+
+# Kubeconfig files
+kubeconfig-rke2.yaml
+*kubeconfig*.yaml
+*.yaml.backup
+
+# SSH keys
+*.pem
+*.pub
+*_private_key
+*_public_key
+
+# Local files
+*.log
