@@ -46,11 +46,6 @@ variable "ssh_public_key_path" {
   default     = null
 }
 
-variable "existing_key_name" {
-  type    = string
-  default = null
-}
-
 variable "vpc_id" {
   description = "Existing VPC ID (leave null if creating a new VPC)"
   type        = string
@@ -80,3 +75,10 @@ variable "longhorn_chart_version" {
   type        = string
   default     = "v1.9.2"
 }
+
+variable "instance_count" {
+  description = "The number of AWS instances to install"
+  type        = number
+  default     = 3
+}
+
