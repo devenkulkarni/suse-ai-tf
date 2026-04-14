@@ -240,17 +240,19 @@ resource "aws_security_group" "default" {
   }
 }
 
-#resource "aws_eip" "ec2_eip" {
-#  domain = "vpc"
-#  tags = {
-#    Name = "${var.prefix}-eip"
-#  }
-#}
+resource "aws_eip" "ec2_eip" {
+  count  = local.instance_count
+  domain = "vpc"
+  tags = {
+    Name = "${var.prefix}-eip-${count.index}"
+  }
+}
 
-#resource "aws_eip_association" "eip_assoc" {
-#  instance_id   = aws_instance.opensuse_gpu.id
-#  allocation_id = aws_eip.ec2_eip.id
-#}
+resource "aws_eip_association" "eip_assoc" {
+  count         = local.instance_count
+  instance_id   = aws_instance.opensuse_gpu[count.index].id
+  allocation_id = aws_eip.ec2_eip[count.index].id
+}
 
 resource "aws_instance" "opensuse_gpu" {
   count = local.instance_count
@@ -273,14 +275,15 @@ resource "aws_instance" "opensuse_gpu" {
 }
 
 resource "null_resource" "wait_for_gpu" {
-  depends_on = [aws_instance.opensuse_gpu]
+  count = local.instance_count
+  depends_on = [aws_instance.opensuse_gpu, aws_eip_association.eip_assoc]
 
   provisioner "remote-exec" {
     connection {
       type        = "ssh"
       user        = local.ssh_username
       private_key = var.create_ssh_key_pair ? tls_private_key.ssh_private_key[0].private_key_openssh : file(local.private_ssh_key_path)
-      host        = aws_instance.opensuse_gpu[0].public_ip
+      host        = aws_eip.ec2_eip[count.index].public_ip
       timeout     = "15m"
     }
 
@@ -297,12 +300,13 @@ resource "null_resource" "wait_for_gpu" {
 }
 
 resource "null_resource" "rke2_installation" {
+  count = local.instance_count
   depends_on = [null_resource.wait_for_gpu]
 
   provisioner "remote-exec" {
     inline = [
       templatefile("${path.module}/scripts/rke2-localpath-install.sh", {
-        public_ip    = aws_instance.opensuse_gpu[0].public_ip
+        public_ip    = aws_eip.ec2_eip[count.index].public_ip
         rke2_version = var.rke2_version
       })
     ]
@@ -311,7 +315,7 @@ resource "null_resource" "rke2_installation" {
       type        = "ssh"
       user        = local.ssh_username
       private_key = var.create_ssh_key_pair ? tls_private_key.ssh_private_key[0].private_key_openssh : file(local.private_ssh_key_path)
-      host        = aws_instance.opensuse_gpu[0].public_ip
+      host        = aws_eip.ec2_eip[count.index].public_ip
     }
   }
 }
@@ -330,7 +334,7 @@ resource "null_resource" "retrieve_kubeconfig" {
       type        = "ssh"
       user        = local.ssh_username
       private_key = var.create_ssh_key_pair ? tls_private_key.ssh_private_key[0].private_key_openssh : file(local.private_ssh_key_path)
-      host        = aws_instance.opensuse_gpu[0].public_ip
+      host        = aws_eip.ec2_eip[0].public_ip
     }
   }
 
@@ -338,14 +342,14 @@ resource "null_resource" "retrieve_kubeconfig" {
     command = <<EOT
       scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
           -i ${local.private_ssh_key_path} \
-          ${local.ssh_username}@${aws_instance.opensuse_gpu[0].public_ip}:/tmp/rke2.yaml \
+          ${local.ssh_username}@${aws_eip.ec2_eip[0].public_ip}:/tmp/rke2.yaml \
           ./kubeconfig-rke2.yaml
       
       # Detect OS and run the correct sed command
       if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s/127.0.0.1/${aws_instance.opensuse_gpu[0].public_ip}/g" ./kubeconfig-rke2.yaml
+        sed -i '' "s/127.0.0.1/${aws_eip.ec2_eip[0].public_ip}/g" ./kubeconfig-rke2.yaml
       else
-        sed -i "s/127.0.0.1/${aws_instance.opensuse_gpu[0].public_ip}/g" ./kubeconfig-rke2.yaml
+        sed -i "s/127.0.0.1/${aws_eip.ec2_eip[0].public_ip}/g" ./kubeconfig-rke2.yaml
       fi
       
       echo "Kubeconfig successfully retrieved and updated."
